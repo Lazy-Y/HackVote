@@ -17,10 +17,10 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
         if arrText.count==0{
             return
         }
-        arrLabel.lastObject?.removeFromSuperview()
-        arrText.lastObject?.removeFromSuperview()
-        arrLabel.removeLastObject()
-        arrText.removeLastObject()
+        arrLabel[arrLabel.count-1].removeFromSuperview()
+        arrText[arrText.count-1].removeFromSuperview()
+        arrLabel.removeLast()
+        arrText.removeLast()
         let count = arrText.count-1
         addOption.frame = CGRect(x: 20, y: top+120+120*count, width: 80, height: 30)
         remove.frame = CGRect(x: 220, y: top+120+120*count, width: 80, height: 30)
@@ -56,7 +56,14 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
         }
         VoteInProgress.dic.append([p.text!,"0"])
         vip.table.reloadData()
-        self.navigationController?.popViewControllerAnimated(true)
+        var dic = Array<String>()
+        for i in arrText{
+            dic.append(i.text)
+        }
+        Vote.dic.append(dic)
+        Vote.prob.append(ptf.text!)
+        Vote.detail.append(detailText.text!)
+        Vote.user.append(user)
     }
     func numberOfComponentsInPickerView(pickerView: UIPickerView) -> Int{
         return 1
@@ -73,12 +80,12 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
         let opt = UILabel(frame: CGRect(x: 20, y: top+120*count, width: 80, height: 30))
         opt.text = "Option "+String(count+1)
         v.addSubview(opt)
-        arrLabel.addObject(opt)
+        arrLabel.append(opt)
         let optText = UITextView(frame: CGRect(x: 20, y: top+30+120*count, width: 280, height: 80))
         optText.text = "write here"
         optText.layer.borderWidth = CGFloat(1)
         v.addSubview(optText)
-        arrText.addObject(optText)
+        arrText.append(optText)
         addOption.frame = CGRect(x: 20, y: top+120+120*count, width: 80, height: 30)
         remove.frame = CGRect(x: 220, y: top+120+120*count, width: 80, height: 30)
         scr.contentSize = CGSizeMake(380, CGFloat(top+200+120*count))
@@ -90,8 +97,8 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
     var detail:UILabel!
     var detailText:UITextView!
     @IBOutlet var addOption: UIButton!
-    var arrText = NSMutableArray()
-    var arrLabel = NSMutableArray()
+    var arrText = Array<UITextView>()
+    var arrLabel = Array<UILabel>()
     var type:UILabel!
     
     @IBOutlet var ptf: UITextField!

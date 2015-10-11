@@ -16,7 +16,6 @@ class MainVote: UIViewController {
     }
     
     func clean(){
-        Vote.dic.removeAll()
         VoteInProgress.dic.removeAll()
         VoteHistory.dic.removeAll()
         MainVote.userData.removeAll()

@@ -11,7 +11,8 @@ import UIKit
 let mainURL = "http://localhost/phpmyadmin/mywork/trojanHack/"
 
 var vip:VoteInProgress!
-
+var user:String!
+var vote:Vote!
 
 
 class ViewController: UIViewController {
@@ -20,6 +21,7 @@ class ViewController: UIViewController {
     @IBAction func login(sender: AnyObject) {
         let board = UIStoryboard(name: "Main", bundle: NSBundle.mainBundle())
         let vc = board.instantiateViewControllerWithIdentifier("main") as! UITabBarController
+        user = name.text
         self.presentViewController(vc, animated: true, completion:nil)
         /*print("Login in start")
         let url = NSURL(string:mainURL+"login.php")

@@ -9,6 +9,33 @@
 import UIKit
 
 class Vote: UIViewController,UITableViewDataSource,UITableViewDelegate {
+    
+    func reloadAll(){
+        if (Vote.prob.isEmpty) {
+            setData()
+            return
+        }
+        Vote.dic.removeFirst()
+        Vote.prob.removeFirst()
+        Vote.detail.removeFirst()
+        Vote.user.removeFirst()
+        setData()
+    }
+    
+    func setData(){
+        if (Vote.dic.isEmpty){
+            who.text = "No questions available"
+            problem.text = ""
+            detail.text = ""
+            table.reloadData()
+        }
+        else {
+            who.text = Vote.user[0]+" post a questioin"
+            problem.text = Vote.prob[0]
+            detail.text = Vote.detail[0]
+            table.reloadData()
+        }
+    }
 
     @IBAction func confirm(sender: AnyObject) {
         if (userChoice == nil) {
@@ -18,7 +45,7 @@ class Vote: UIViewController,UITableViewDataSource,UITableViewDelegate {
             self.presentViewController(alert, animated: true, completion: nil)
             return
         }
-        self.navigationController?.popViewControllerAnimated(true)
+        reloadAll()
     }
     @IBOutlet var who: UILabel!
     @IBOutlet var problem: UILabel!
@@ -29,8 +56,8 @@ class Vote: UIViewController,UITableViewDataSource,UITableViewDelegate {
         super.viewDidLoad()
         table.delegate = self
         table.dataSource = self
-        Vote.dic = ["swift","java"]
-        table.reloadData()
+        vote = self
+        setData()
         // Do any additional setup after loading the view.
     }
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath){
@@ -43,14 +70,18 @@ class Vote: UIViewController,UITableViewDataSource,UITableViewDelegate {
         // Dispose of any resources that can be recreated.
     }
     
-    static var dic = Array<String>()
+    static var dic = Array<Array<String>>()
+    static var prob = Array<String>()
+    static var detail = Array<String>()
+    static var user = Array<String>()
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int{
-        return Vote.dic.count
+        if (Vote.dic.isEmpty) {return 0}
+        return Vote.dic[0].count
     }
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell{
         let cell = UITableViewCell(style: UITableViewCellStyle.Default, reuseIdentifier: "vcell")
-        cell.textLabel?.text = Vote.dic[indexPath.row]
+        cell.textLabel?.text = Vote.dic[0][indexPath.row]
         if indexPath != userChoice {
             cell.textLabel?.textColor = UIColor.blackColor()
         }
