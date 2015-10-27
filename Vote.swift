@@ -10,54 +10,121 @@ import UIKit
 
 class Vote: UIViewController,UITableViewDataSource,UITableViewDelegate {
     
-    func reloadAll(){
-        if (Vote.prob.isEmpty) {
-            setData()
-            return
+    var opt:Array<String>!
+    
+    func refreshData(dic:NSDictionary){
+        refreshControl.endRefreshing()
+        Vote.dic = dic as! NSMutableDictionary
+        if let options = Vote.dic["options"]{
+            opt = options.componentsSeparatedByString("§")
         }
-        Vote.dic.removeFirst()
-        Vote.prob.removeFirst()
-        Vote.detail.removeFirst()
-        Vote.user.removeFirst()
+        else {
+            opt?.removeAll()
+        }
         setData()
     }
     
-    func setData(){
-        if (Vote.dic.isEmpty){
-            who.text = "No questions available"
-            problem.text = ""
-            detail.text = ""
-            table.reloadData()
-        }
-        else {
-            who.text = Vote.user[0]+" post a questioin"
-            problem.text = Vote.prob[0]
-            detail.text = Vote.detail[0]
-            table.reloadData()
+    private func setData(){
+        dispatch_async(dispatch_get_main_queue()) { () -> Void in
+            if (Vote.dic["empty"] as! String == "true"){
+                self.who.text = "No questions available"
+                self.problem.text = ""
+                self.detail.text = ""
+            }
+            else {
+                self.who.text = Vote.dic["owner"] as! String+" post a questioin"
+                self.problem.text = (Vote.dic["problem"] as! String)
+                self.detail.text = (Vote.dic["detail"] as! String)
+                self.detail.text = (Vote.dic["detail"] as! String)
+            }
+            self.table.reloadData()
         }
     }
-
-    @IBAction func confirm(sender: AnyObject) {
-        if (userChoice == nil) {
-            let cancelAction = UIAlertAction(title: "Ok", style: .Cancel){(action) in}
-            let alert = UIAlertController(title: "Warning", message: "Please select at least one item", preferredStyle: UIAlertControllerStyle.Alert)
-            alert.addAction(cancelAction)
-            self.presentViewController(alert, animated: true, completion: nil)
+    
+    var url:String{
+        return "get_one.php"
+    }
+    
+    var upload:String{
+        return "user="+mainVote.userData["name"]!
+    }
+    
+    func refreshView(){
+        let request = newPostRequest(upload,url: url)
+        if request == nil{
             return
         }
-        reloadAll()
+        let task = NSURLSession.sharedSession().dataTaskWithRequest(request!){
+            (data,resp,err) in
+            connect(data, resp: resp, err: err, myTask:self.refreshData, vc: self)
+        }
+        task.resume()
+    }
+    
+    private func checkUserChoice()->Bool{
+        if (userChoice == nil) {
+            errMsg("Warning", msg: "Please select at least one item", vc: self)
+            return false
+        }
+        else{
+            return true
+        }
+    }
+    
+    var upload1:String{
+        var str = "name="
+        str += mainVote.userData["name"]!
+        str += "&id="
+        str += String(Vote.dic["id"]!)
+        str += "&selected="
+        str += String(userChoice.row+1)
+        print(str)
+        return str
+    }
+    
+    func submitTask(dic:NSDictionary){
+        refreshView()
+    }
+    
+    var url1:String{
+        return "user_select.php"
+    }
+    
+    private func submit(){
+        if checkUserChoice(){
+            let request = newPostRequest(upload1,url: url1)
+            print(url1)
+            if request == nil{
+                return
+            }
+            let task = NSURLSession.sharedSession().dataTaskWithRequest(request!){
+                (data,resp,err) in
+                connect(data, resp: resp, err: err, myTask:self.submitTask, vc: self)
+            }
+            task.resume()
+        }
+    }
+    
+    @IBAction func confirm(sender: AnyObject) {
+        if checkUserChoice(){
+            submit()
+        }
     }
     @IBOutlet var who: UILabel!
     @IBOutlet var problem: UILabel!
     @IBOutlet var detail: UITextView!
     @IBOutlet var table: UITableView!
+    var refreshControl = UIRefreshControl()
     private var userChoice:NSIndexPath!
     override func viewDidLoad() {
         super.viewDidLoad()
         table.delegate = self
         table.dataSource = self
         vote = self
-        setData()
+        refreshView()
+        refreshControl.addTarget(self, action: "refreshView", forControlEvents: UIControlEvents.ValueChanged)
+        refreshControl.attributedTitle = NSAttributedString(string: "refresh")
+        table.addSubview(refreshControl)
         // Do any additional setup after loading the view.
     }
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath){
@@ -70,18 +137,17 @@ class Vote: UIViewController,UITableViewDataSource,UITableViewDelegate {
         // Dispose of any resources that can be recreated.
     }
     
-    static var dic = Array<Array<String>>()
-    static var prob = Array<String>()
-    static var detail = Array<String>()
-    static var user = Array<String>()
+    static var dic = NSMutableDictionary()
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int{
-        if (Vote.dic.isEmpty) {return 0}
-        return Vote.dic[0].count
+        if opt == nil{
+            return 0
+        }
+        return opt.count
     }
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell{
         let cell = UITableViewCell(style: UITableViewCellStyle.Default, reuseIdentifier: "vcell")
-        cell.textLabel?.text = Vote.dic[0][indexPath.row]
+        cell.textLabel?.text = opt[indexPath.row]
         if indexPath != userChoice {
             cell.textLabel?.textColor = UIColor.blackColor()
         }
@@ -90,16 +156,4 @@ class Vote: UIViewController,UITableViewDataSource,UITableViewDelegate {
         }
         return cell
     }
-    
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }

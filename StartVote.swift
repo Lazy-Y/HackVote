@@ -24,47 +24,88 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
         let count = arrText.count-1
         addOption.frame = CGRect(x: 20, y: top+120+120*count, width: 80, height: 30)
         remove.frame = CGRect(x: 220, y: top+120+120*count, width: 80, height: 30)
-        scr.contentSize = CGSizeMake(340, CGFloat(top+200+120*count))
-        v.frame = CGRect(x: 0, y: 0, width: 340, height: top+150+120*count)
+        scr.contentSize = CGSizeMake(340, CGFloat(top+400+120*count))
+        v.frame = CGRect(x: 0, y: 0, width: 340, height: top+350+120*count)
     }
 
     @IBOutlet var remove: UIButton!
-    @IBAction func confirm(sender: AnyObject) {
+    
+    private func getRow(row:Int)->String{
+        switch row{
+        case 0:
+            return "academic"
+        case 1:
+            return "recreation"
+        case 2:
+            return "finance"
+        default:
+            return "social"
+        }
+    }
+    
+    private func checkConfirm()->Bool{
         if ptf.text!.isEmpty {
-            let cancelAction = UIAlertAction(title: "Ok", style: .Cancel){(action) in
-            }
-            let alert = UIAlertController(title: "Sorry", message: "Problem title cannot be empty", preferredStyle: UIAlertControllerStyle.Alert)
-            alert.addAction(cancelAction)
-            self.presentViewController(alert, animated: true, completion: nil)
-            return
+            errMsg("Sorry", msg: "Problem title cannot be empty", vc: self)
+            return false
         }
         if detailText.text!.isEmpty {
-            let cancelAction = UIAlertAction(title: "Ok", style: .Cancel){(action) in
-            }
-            let alert = UIAlertController(title: "Sorry", message: "Detail description cannot be empty", preferredStyle: UIAlertControllerStyle.Alert)
-            alert.addAction(cancelAction)
-            self.presentViewController(alert, animated: true, completion: nil)
-            return
+            errMsg("Sorry", msg: "Detail description cannot be empty", vc: self)
+            return false
         }
         if arrText.count < 2 {
-            let cancelAction = UIAlertAction(title: "Ok", style: .Cancel){(action) in
+            errMsg("Sorry", msg: "You must add at least 2 options", vc: self)
+            return false
+        }
+        return true
+    }
+    
+    //upload: owner, problem, detail, type, options
+    private func upload()->String?{
+        var check = true
+        var str = "owner=" + mainVote.userData["name"]! + "&problem=" + ptf.text! + "&detail=" + detailText.text!
+        str += "&type=" + getRow(aspect.selectedRowInComponent(0))
+        str += "&options="
+        for item in arrText{
+            str+=item.text!+"§"
+            if (!checkValidStr(item.text!)){
+                check = false
             }
-            let alert = UIAlertController(title: "Sorry", message: "You must add at least 2 options", preferredStyle: UIAlertControllerStyle.Alert)
-            alert.addAction(cancelAction)
-            self.presentViewController(alert, animated: true, completion: nil)
+        }
+        if (!checkValidStr(ptf.text!))||(!checkValidStr(detailText.text!)) {
+            check = false
+        }
+        str.removeAtIndex(str.endIndex.predecessor())
+        if !check{
+            return nil
+        }
+        else {
+            return str
+        }
+    }
+    
+    private func setVote(dic:NSDictionary){
+        vip.dic.addObject([self.ptf.text!,"0"])
+        vip.table.reloadData()
+        dispatch_async(dispatch_get_main_queue(), { () -> Void in
+            self.navigationController?.popViewControllerAnimated(true)
+        })
+    }
+    
+    @IBAction func confirm(sender: AnyObject) {
+        if !checkConfirm(){
             return
         }
-        VoteInProgress.dic.append([p.text!,"0"])
-        vip.table.reloadData()
-        var dic = Array<String>()
-        for i in arrText{
-            dic.append(i.text)
+        let request = newPostRequest(upload(),url: "post.php")
+        if request == nil{
+            return
         }
-        Vote.dic.append(dic)
-        Vote.prob.append(ptf.text!)
-        Vote.detail.append(detailText.text!)
-        Vote.user.append(user)
+        let task = NSURLSession.sharedSession().dataTaskWithRequest(request!){
+            (data,resp,err) in
+            connect(data, resp: resp, err: err, myTask:self.setVote, vc: self)
+        }
+        task.resume()
     }
+    
     func numberOfComponentsInPickerView(pickerView: UIPickerView) -> Int{
         return 1
     }
@@ -72,9 +113,11 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
     func pickerView(pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int{
         return arr.count
     }
+    
     func pickerView(pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String?{
         return arr[row]
     }
+    
     @IBAction func add(sender: AnyObject) {
         let count = arrText.count
         let opt = UILabel(frame: CGRect(x: 20, y: top+120*count, width: 80, height: 30))
@@ -88,8 +131,8 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
         arrText.append(optText)
         addOption.frame = CGRect(x: 20, y: top+120+120*count, width: 80, height: 30)
         remove.frame = CGRect(x: 220, y: top+120+120*count, width: 80, height: 30)
-        scr.contentSize = CGSizeMake(380, CGFloat(top+200+120*count))
-        v.frame = CGRect(x: 0, y: 0, width: 380, height: top+150+120*count)
+        scr.contentSize = CGSizeMake(380, CGFloat(top+400+120*count))
+        v.frame = CGRect(x: 0, y: 0, width: 380, height: top+350+120*count)
     }
     @IBOutlet var scr: UIScrollView!
     @IBOutlet var v: UIView!
@@ -101,7 +144,7 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
     var arrLabel = Array<UILabel>()
     var type:UILabel!
     
-    @IBOutlet var ptf: UITextField!
+    @IBOutlet var ptf: UITextView!
     
     var dic = Array<String>()
     
@@ -113,7 +156,7 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
         v.autoresizesSubviews = true;
         // Do any additional setup after loading the view
         
-        v.frame = CGRect(x: scr.frame.minX ,y: scr.frame.minY,width: 380,height: scr.frame.height)
+        v.frame = CGRect(x: scr.frame.minX ,y: scr.frame.minY,width: 380,height: scr.frame.height+300)
         p = UILabel(frame: CGRect(x: 20, y: 20, width: 80, height: 30))
         p.text = "Problem:"
         v.addSubview(p)
@@ -133,6 +176,15 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
         aspect.dataSource = self
         addOption.frame = CGRect(x: 20, y: top, width: 80, height: 30)
         remove.frame = CGRect(x: 220, y: top, width: 80, height: 30)
+        
+        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: "DismissKeyboard:")
+        view.addGestureRecognizer(tap)
+        
+    }
+    
+    
+    func DismissKeyboard(recognizer: UITapGestureRecognizer){
+        view.endEditing(true)
     }
 
     override func didReceiveMemoryWarning() {
@@ -152,5 +204,69 @@ class StartVote: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource{
         // Pass the selected object to the new view controller.
     }
     */
-
+    
+    private var activeField:UITextField?
+    
+    func registerForKeyboardNotifications()
+    {
+        //Adding notifies on keyboard appearing
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: "keyboardWasShown:", name: UIKeyboardWillShowNotification, object: nil)
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: "keyboardWillBeHidden:", name: UIKeyboardWillHideNotification, object: nil)
+    }
+    
+    
+    func deregisterFromKeyboardNotifications()
+    {
+        //Removing notifies on keyboard appearing
+        NSNotificationCenter.defaultCenter().removeObserver(self, name: UIKeyboardWillShowNotification, object: nil)
+        NSNotificationCenter.defaultCenter().removeObserver(self, name: UIKeyboardWillHideNotification, object: nil)
+    }
+    
+    func keyboardWasShown(notification: NSNotification)
+    {
+        //Need to calculate keyboard exact size due to Apple suggestions
+        self.scr.scrollEnabled = true
+        let info : NSDictionary = notification.userInfo!
+        let keyboardSize = (info[UIKeyboardFrameBeginUserInfoKey] as? NSValue)?.CGRectValue().size
+        let contentInsets : UIEdgeInsets = UIEdgeInsetsMake(0.0, 0.0, keyboardSize!.height, 0.0)
+        
+        self.scr.contentInset = contentInsets
+        self.scr.scrollIndicatorInsets = contentInsets
+        
+        var aRect : CGRect = self.view.frame
+        aRect.size.height -= keyboardSize!.height
+        if let _ = activeField
+        {
+            if (!CGRectContainsPoint(aRect, activeField!.frame.origin))
+            {
+                self.scr.scrollRectToVisible(activeField!.frame, animated: true)
+            }
+        }
+        
+        
+    }
+    
+    
+    func keyboardWillBeHidden(notification: NSNotification)
+    {
+        //Once keyboard disappears, restore original positions
+        let info : NSDictionary = notification.userInfo!
+        let keyboardSize = (info[UIKeyboardFrameBeginUserInfoKey] as? NSValue)?.CGRectValue().size
+        let contentInsets : UIEdgeInsets = UIEdgeInsetsMake(0.0, 0.0, -keyboardSize!.height, 0.0)
+        self.scr.contentInset = contentInsets
+        self.scr.scrollIndicatorInsets = contentInsets
+        self.view.endEditing(true)
+        self.scr.scrollEnabled = false
+        
+    }
+    
+    func textFieldDidBeginEditing(textField: UITextField)
+    {
+        activeField = textField
+    }
+    
+    func textFieldDidEndEditing(textField: UITextField)
+    {
+        activeField = nil
+    }
 }

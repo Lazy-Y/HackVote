@@ -1,26 +1,39 @@
 //
-//  VoteHistory.swift
+//  FeedBack.swift
 //  HackVote
 //
-//  Created by 钟镇阳 on 10/10/15.
+//  Created by 钟镇阳 on 10/15/15.
 //  Copyright © 2015 ZhenyangZhong. All rights reserved.
 //
 
 import UIKit
 
-class VoteHistory: VoteInProgress {
+class FeedBack: Vote {
+    
+    var problemID:String!
     
     override var url:String{
-        return "vote_history.php"
+        return "feedback.php"
     }
     
-    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath){
-        self.table.deselectRowAtIndexPath(indexPath, animated: true)
+    override var upload:String{
+        return "id="+problemID
     }
-
+    
+    override var url1:String{
+        return "post_feedback.php"
+    }
+    
+    override func submitTask(dic: NSDictionary) {
+        dispatch_async(dispatch_get_main_queue()) { () -> Void in
+            self.navigationController?.popViewControllerAnimated(true)
+        }
+        vip.loadData()
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        vh = self
+        self.navigationItem.title = "Feedback"
         // Do any additional setup after loading the view.
     }
 
